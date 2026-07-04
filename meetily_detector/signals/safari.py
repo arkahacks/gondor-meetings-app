@@ -46,10 +46,10 @@ tell application "Safari"
                 end try
                 set _isFront to (_isFrontWin and (t is _activeTab))
                 set end of _lines to ((_isFront as text) & tab & _u & tab & _n)
-            end try
+            end repeat
         end try
     end repeat
-    set AppleScript's text item delimiters to (ASCII character 10)
+    set AppleScript's text item delimiters to linefeed
     return _lines as text
 end tell
 '''
