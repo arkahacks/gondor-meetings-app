@@ -1,0 +1,137 @@
+# Meetily auto-detect companion agent — configuration.
+#
+# Copy to ~/.config/meetily-detector/config.toml and edit.
+# All values shown are defaults; you only need to set what you want to change.
+
+[general]
+# Master switch for the companion agent. The Meetily-side toggle
+# (`auto_record_enabled` in Meetily Settings) is the authoritative one and is
+# enforced by Meetily itself; this is a convenience kill-switch for the agent.
+enabled = true
+
+# Seconds between polls. 5s keeps the "record within 15s of join" target
+# (candidate poll + 2-poll mic debounce) while staying near-zero cost.
+poll_interval_seconds = 5
+
+# Path to the Meetily launcher used for external triggers.
+# The agent invokes:  open -a "<meetily_app>" --args --start-recording ...
+meetily_app = "meetily"
+
+# Status file the patched Meetily maintains on every start/stop. The agent
+# reads it to reconcile state on boot and to tell manual vs. auto recordings
+# apart. Must match the path the Meetily patch writes to.
+meetily_status_file = "~/Library/Application Support/meetily/recording_status.json"
+
+[detection]
+# Number of consecutive polls the mic must be active before we start recording
+# (debounce against transient mic blips). 2 polls @ 5s = ~10s.
+mic_debounce_polls = 2
+
+# Number of consecutive polls with the call gone (tab closed OR mic idle)
+# before we stop. 6 polls @ 5s = ~30s, tolerating brief mutes/reconnects.
+stop_idle_polls = 6
+
+# Refractory period after a stop before a new auto-start is allowed, to avoid
+# flapping on reconnects. Seconds.
+cooldown_seconds = 60
+
+# Require the matching Meet tab to be the frontmost/active tab at trigger time.
+# Mitigates false positives when the mic is used by another app (dictation,
+# voice memo) while a Meet tab sits idle in the background. (Edge case #4.)
+require_frontmost_tab = true
+
+[platforms]
+# Per-domain allowlist (FR-9). Additional web-meeting platforms can be enabled
+# by config, not code. Each entry maps a hostname to a URL regex whose match
+# marks the tab as a meeting candidate. Google Meet is the only P0 platform.
+[[platforms.rule]]
+name = "google-meet"
+enabled = true
+url_regex = '^https://meet\.google\.com/([a-z]{3}-[a-z]{4}-[a-z]{3})(\?.*)?$'
+
+# Examples for v1.1 — disabled by default:
+[[platforms.rule]]
+name = "zoom-web"
+enabled = false
+url_regex = '^https://[^/]*\.zoom\.us/wc/\d+/'
+
+[[platforms.rule]]
+name = "teams-web"
+enabled = false
+url_regex = '^https://teams\.(microsoft|live)\.com/.*/meetup-join/'
+
+[title]
+# Where recording titles come from, in priority order.
+#   calendar  -> match the Meet code against a Google Calendar event; use its name
+#   tab       -> use the Safari tab title
+#   code      -> use the raw meeting code
+# The first source that yields a non-generic title wins; later ones are fallback.
+sources = ["calendar", "tab", "code"]
+
+# Appended to every title: " — YYYY-MM-DD HH:MM" (per FR-2).
+append_timestamp = true
+
+[calendar]
+# Enrich the title from Google Calendar (answers the "pull the current meeting
+# from gmeet" question: the Meet code from the tab is matched to the calendar
+# event that owns that conference link, and the event's name is used).
+enabled = true
+
+# OAuth client for the Google Calendar read-only API. Point these at a token
+# file produced by `meetily-detector auth-calendar`.
+oauth_client_secrets = "~/.config/meetily-detector/gcal_client.json"
+token_file = "~/.config/meetily-detector/gcal_token.json"
+
+# How far on either side of "now" to look for the event owning the Meet link.
+window_minutes = 30
+
+[summary]
+# Auto-trigger Meetily summary generation on auto-stop (open question #1: yes —
+# gives true meeting -> Notion zero-touch).
+auto_generate = true
+
+# Seconds to wait for the summary to be written before giving up on the
+# Notion push. Summaries run locally and can take a while on long meetings.
+wait_timeout_seconds = 600
+
+# File the patched Meetily writes the finished summary to (JSON:
+# {meeting_id, title, summary, ended_at}). The agent waits for this to appear,
+# then includes the summary as the Notion page body.
+output_file = "~/Library/Application Support/meetily/last_summary.json"
+
+[notion]
+# Push the finished meeting (name, date, category, summary body) into the
+# Notion "Meeting Notes" database.
+enabled = true
+
+# Notion internal-integration token. Prefer the env var NOTION_TOKEN over
+# storing it here. https://www.notion.so/my-integrations
+token = ""
+
+# Target database (the "Meeting Notes" DB). This is the DB id, dashed form.
+database_id = "393685da-0466-80f4-9e29-f7e376644101"
+
+# Map a calendar event / title keyword to a Category multi-select option.
+# First keyword that appears (case-insensitive) in the title wins; no match
+# leaves Category empty.
+[notion.category_keywords]
+standup = "Standup"
+"stand-up" = "Standup"
+sync = "Standup"
+planning = "Planning"
+retro = "Retro"
+retrospective = "Retro"
+demo = "Presentation"
+presentation = "Presentation"
+customer = "Customer call"
+client = "Customer call"
+sales = "Customer call"
+
+[logging]
+# Rotating local log file (FR-11); no telemetry ever leaves the machine.
+file = "~/Library/Logs/meetily-detector/detector.log"
+level = "INFO"
+max_bytes = 1048576
+backup_count = 3
+# Redact the meeting code from logs (privacy option, Sec. 7).
+redact_meeting_code = false

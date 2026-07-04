@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "meetily-detector"
+version = "1.0.0"
+description = "Auto-detect & auto-record companion agent for Meetily (Community Edition)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Gondor Industries" }]
+dependencies = [
+    # Only the network client is a hard dependency; macOS signal collection
+    # uses stdlib `osascript`/`subprocess`, so the agent stays dependency-light.
+    "requests>=2.31",
+    # TOML parsing: stdlib tomllib on 3.11+, tomli backport on 3.10.
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+# Native CoreAudio mic detection (macOS). Without this the agent falls back to
+# an AppleScript audio-device probe, so it is optional.
+macos = ["pyobjc-framework-CoreAudio>=10.0"]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+meetily-detector = "meetily_detector.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["meetily_detector*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

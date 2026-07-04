@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  LaunchAgent for the Meetily auto-detect companion agent (PRD M2).
+
+  Install:
+    1. Edit the ProgramArguments path below to your Python + package location.
+    2. cp launchd/com.gondor.meetily-detector.plist ~/Library/LaunchAgents/
+    3. launchctl load ~/Library/LaunchAgents/com.gondor.meetily-detector.plist
+
+  The first time the agent enumerates Safari tabs, macOS shows a one-time
+  Automation (Apple Events -> Safari) permission prompt. Approve it.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.gondor.meetily-detector</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <!-- Adjust to your interpreter. Using the module entrypoint keeps this
+             independent of PATH resolution under launchd. -->
+        <string>/usr/bin/env</string>
+        <string>python3</string>
+        <string>-m</string>
+        <string>meetily_detector</string>
+        <string>run</string>
+    </array>
+
+    <!-- Keep the agent alive; restart if it exits. -->
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- Throttle restart loops. -->
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <!-- launchd captures stdout/stderr; the app also writes its own rotating
+         log (see [logging] in config.toml). -->
+    <key>StandardOutPath</key>
+    <string>/tmp/meetily-detector.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/meetily-detector.err.log</string>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>

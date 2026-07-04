@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.venv/
+venv/
+
+# Local secrets / runtime state — never commit
+config.toml
+gcal_client.json
+gcal_token.json
+snooze.json
+*.log
