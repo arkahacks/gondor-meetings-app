@@ -23,7 +23,11 @@ def _build_logger(cfg: configmod.Config):
 
 def cmd_run(args) -> int:
     cfg = configmod.load(args.config)
-    _build_logger(cfg)
+    logger = _build_logger(cfg)
+    if args.verbose:
+        import logging
+
+        logger.setLevel(logging.DEBUG)
     Detector(cfg, dry_run=args.dry_run).run()
     return 0
 
@@ -78,6 +82,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--dry-run",
         action="store_true",
         help="detect and log what would happen, but never trigger Meetily or Notion",
+    )
+    run_p.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="log every poll (tab count, mic state) at DEBUG level",
     )
     run_p.set_defaults(func=cmd_run)
 

@@ -138,9 +138,24 @@ class Detector:
         if snoozed and self.sm.state in (State.IDLE, State.CANDIDATE):
             candidate = None
 
-        result = self.sm.poll(candidate, self._mic_active(), recording_active, now)
+        mic = self._mic_active()
+        self.log.debug(
+            "poll: %d safari tab(s), meet-candidate=%s, mic=%s, state=%s",
+            len(tabs),
+            candidate.meeting_code if candidate else None,
+            mic,
+            self.sm.state.value,
+        )
 
-        if result.reason:
+        prev_state = self.sm.state
+        result = self.sm.poll(candidate, mic, recording_active, now)
+
+        # State changes are the signal the user cares about — log them at INFO.
+        if result.state is not prev_state:
+            self.log.info(
+                "%s -> %s (%s)", prev_state.value, result.state.value, result.reason
+            )
+        elif result.reason:
             self.log.debug("state=%s action=%s (%s)", result.state.value, result.action.value, result.reason)
 
         if result.action is Action.START:
@@ -214,8 +229,38 @@ class Detector:
 
     # --- run loop ----------------------------------------------------------
 
+    def _startup_diagnostic(self) -> None:
+        mode = "DRY-RUN (nothing will be triggered)" if self.dry_run else "LIVE"
+        self.log.info("mode: %s", mode)
+        self.log.info(
+            "integrations: calendar=%s, notion=%s",
+            self.cfg.calendar.enabled,
+            self.cfg.notion.enabled and bool(self.cfg.notion.token),
+        )
+
+        tabs = self._list_tabs()
+        self.log.info("Safari: %d tab(s) visible", len(tabs))
+        if not tabs:
+            self.log.info(
+                "  (0 tabs = Safari closed, no windows, or the Automation "
+                "permission was denied — grant it under System Settings -> "
+                "Privacy & Security -> Automation -> <your terminal> -> Safari)"
+            )
+
+        mic = self._mic_in_use()
+        if mic is None:
+            self.log.warning(
+                "microphone detection UNAVAILABLE (CoreAudio not reachable) — "
+                "auto-start cannot confirm a join and will never fire"
+            )
+        else:
+            self.log.info("microphone in use right now: %s", mic)
+
+        self.log.info("watching for Google Meet in Safari — join a call to test.")
+
     def run(self) -> None:
         self.log.info("meetily-detector starting (poll=%ss)", self.cfg.poll_interval_seconds)
+        self._startup_diagnostic()
         self.reconcile_on_boot()
         self._running = True
         while self._running:
