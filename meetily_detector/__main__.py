@@ -41,6 +41,19 @@ def cmd_unsnooze(args) -> int:
     return 0
 
 
+def cmd_auth_calendar(args) -> int:
+    cfg = configmod.load(args.config)
+    _build_logger(cfg)
+    from .auth import run_installed_app_flow
+
+    secrets = args.client_secrets or cfg.calendar.oauth_client_secrets
+    token_file = args.token_file or cfg.calendar.token_file
+    run_installed_app_flow(secrets, token_file, open_browser=not args.no_browser)
+    print(f"\nCalendar token saved to {token_file}")
+    print("Titles will now be enriched from your Google Calendar.")
+    return 0
+
+
 def cmd_status(args) -> int:
     cfg = configmod.load(args.config)
     _build_logger(cfg)
@@ -75,6 +88,15 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("unsnooze", help="clear an active snooze").set_defaults(
         func=cmd_unsnooze
     )
+
+    ap = sub.add_parser(
+        "auth-calendar",
+        help="run the one-time Google Calendar OAuth consent flow and save the token",
+    )
+    ap.add_argument("--client-secrets", help="path to the Desktop-app client_secrets JSON")
+    ap.add_argument("--token-file", help="where to write the token (default: config value)")
+    ap.add_argument("--no-browser", action="store_true", help="print the URL instead of opening a browser")
+    ap.set_defaults(func=cmd_auth_calendar)
     sub.add_parser("status", help="print agent + recording status").set_defaults(
         func=cmd_status
     )

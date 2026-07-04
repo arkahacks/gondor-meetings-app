@@ -90,12 +90,18 @@ $EDITOR ~/.config/meetily-detector/config.toml   # set notion token, calendar, e
 **1. Apply the Meetily patch** (Component A) — see [`meetily-patch/README.md`](meetily-patch/README.md).
 Then enable the toggle in **Meetily → Settings → Recording**.
 
-**2. Calendar (optional, for good titles).** Create a Google Cloud OAuth client
-(Desktop app) with the `calendar.readonly` scope, save the client JSON to
-`~/.config/meetily-detector/gcal_client.json`, and run a one-time consent flow
-to produce `gcal_token.json` (fields: `access_token`, `refresh_token`,
-`client_id`, `client_secret`, `expiry`). If calendar is disabled, titles fall
-back to the tab title.
+**2. Calendar (optional, for good titles).** In Google Cloud Console create an
+OAuth **Desktop app** client with the `calendar.readonly` scope, download its
+`client_secret*.json`, and save it to
+`~/.config/meetily-detector/gcal_client.json`. Then run the built-in consent
+flow — it opens a browser, catches the redirect on a loopback port, and writes
+the token file for you:
+
+```bash
+meetily-detector auth-calendar
+```
+
+If calendar is disabled or unauthenticated, titles fall back to the tab title.
 
 **3. Notion (optional).** Create an internal integration, share the
 "Meeting Notes" database with it, and set `NOTION_TOKEN` (or `[notion].token`).
@@ -117,6 +123,7 @@ meetily-detector run           # run in the foreground (launchd runs this)
 meetily-detector run --dry-run # detect & log what WOULD happen; never triggers
                                # Meetily or Notion — safe to try before patching Meetily
 meetily-detector status        # agent + recording status
+meetily-detector auth-calendar # one-time Google Calendar OAuth consent flow
 meetily-detector snooze 2      # pause auto-record for 2 hours
 meetily-detector unsnooze
 ```
