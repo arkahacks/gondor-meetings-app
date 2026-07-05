@@ -26,33 +26,29 @@ def _chromium_script(app: str) -> str:
     return f'''
 if application "{app}" is not running then return ""
 tell application "{app}"
-    set _lines to {{}}
+    set _out to ""
     set _frontWin to missing value
     try
         set _frontWin to front window
     end try
     repeat with w in windows
+        set _active to missing value
         try
-            set _isFrontWin to (w is _frontWin)
-            set _active to (active tab of w)
+            set _active to active tab of w
+        end try
+        try
             repeat with t in (tabs of w)
-                try
-                    set _u to (URL of t)
-                on error
-                    set _u to ""
-                end try
-                try
-                    set _n to (title of t)
-                on error
-                    set _n to ""
-                end try
-                set _isFront to (_isFrontWin and (t is _active))
-                set end of _lines to ((_isFront as text) & tab & _u & tab & _n)
+                set _u to (URL of t)
+                if _u is missing value then set _u to ""
+                set _n to (title of t)
+                if _n is missing value then set _n to ""
+                set _f to "false"
+                if (_active is not missing value) and (t is _active) and (w is _frontWin) then set _f to "true"
+                set _out to _out & _f & tab & _u & tab & _n & linefeed
             end repeat
         end try
     end repeat
-    set AppleScript's text item delimiters to linefeed
-    return _lines as text
+    return _out
 end tell
 '''
 

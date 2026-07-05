@@ -23,34 +23,29 @@ from ..logutil import get_logger
 _SCRIPT = r'''
 if application "Safari" is not running then return ""
 tell application "Safari"
-    set _lines to {}
+    set _out to ""
+    set _front to missing value
     try
-        set _front to front window
-    on error
-        set _front to missing value
+        set _front to window 1
     end try
     repeat with w in windows
+        set _ct to missing value
         try
-            set _isFrontWin to (w is _front)
-            set _activeTab to (current tab of w)
+            set _ct to current tab of w
+        end try
+        try
             repeat with t in (tabs of w)
-                try
-                    set _u to (URL of t)
-                on error
-                    set _u to ""
-                end try
-                try
-                    set _n to (name of t)
-                on error
-                    set _n to ""
-                end try
-                set _isFront to (_isFrontWin and (t is _activeTab))
-                set end of _lines to ((_isFront as text) & tab & _u & tab & _n)
+                set _u to (URL of t)
+                if _u is missing value then set _u to ""
+                set _n to (name of t)
+                if _n is missing value then set _n to ""
+                set _f to "false"
+                if (_ct is not missing value) and (t is _ct) and (w is _front) then set _f to "true"
+                set _out to _out & _f & tab & _u & tab & _n & linefeed
             end repeat
         end try
     end repeat
-    set AppleScript's text item delimiters to linefeed
-    return _lines as text
+    return _out
 end tell
 '''
 
