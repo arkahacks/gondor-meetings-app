@@ -149,7 +149,9 @@ for testing.
 
 ## Scope note
 
-Google Meet + Safari + macOS only (v1). Chrome/Firefox/Arc, Zoom/Teams native,
-and calendar pre-arming are future work (the `[platforms]` allowlist already
-lets you add web-based Zoom/Teams by config). Bot-style joining is explicitly
-out of scope — this is a local capture tool for meetings you attend.
+Google Meet on macOS. Tab detection works across **Safari, Chrome, Brave, Edge,
+and Chromium** (only browsers that are actually running are queried; each needs
+its own one-time Automation grant). Firefox/Arc, Zoom/Teams native, and calendar
+pre-arming are future work (the `[platforms]` allowlist already lets you add
+web-based Zoom/Teams by config). Bot-style joining is explicitly out of scope —
+this is a local capture tool for meetings you attend.

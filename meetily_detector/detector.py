@@ -16,8 +16,8 @@ from .logutil import get_logger
 from .meet import find_candidate
 from .meetily import MeetilyClient
 from .notion_sync import NotionClient, infer_category
+from .signals import browsers as browsersmod
 from .signals import mic as micmod
-from .signals import safari as safarimod
 from .state_machine import Action, State, StateMachine
 from .summary import wait_for_summary
 from .title import resolve_title
@@ -35,7 +35,7 @@ class Detector:
         meetily: MeetilyClient | None = None,
         calendar: GoogleCalendarClient | None = None,
         notion: NotionClient | None = None,
-        list_tabs=safarimod.list_tabs,
+        list_tabs=browsersmod.list_all_tabs,
         mic_in_use=micmod.mic_in_use,
         clock=time.time,
         sleep=time.sleep,
@@ -140,7 +140,7 @@ class Detector:
 
         mic = self._mic_active()
         self.log.debug(
-            "poll: %d safari tab(s), meet-candidate=%s, mic=%s, state=%s",
+            "poll: %d browser tab(s), meet-candidate=%s, mic=%s, state=%s",
             len(tabs),
             candidate.meeting_code if candidate else None,
             mic,
@@ -238,13 +238,20 @@ class Detector:
             self.cfg.notion.enabled and bool(self.cfg.notion.token),
         )
 
+        running = browsersmod.running_browsers()
+        self.log.info("browsers running: %s", ", ".join(running) or "none")
         tabs = self._list_tabs()
-        self.log.info("Safari: %d tab(s) visible", len(tabs))
-        if not tabs:
+        self.log.info("%d tab(s) visible across running browsers", len(tabs))
+        if running and not tabs:
             self.log.info(
-                "  (0 tabs = Safari closed, no windows, or the Automation "
-                "permission was denied — grant it under System Settings -> "
-                "Privacy & Security -> Automation -> <your terminal> -> Safari)"
+                "  (browser is running but 0 tabs came back — usually a pending/denied "
+                "Automation grant; approve the prompt, or enable it under System Settings "
+                "-> Privacy & Security -> Automation -> <your terminal> -> <browser>)"
+            )
+        elif not running:
+            self.log.info(
+                "  (no supported browser running — open your Meet call in "
+                "Safari/Chrome/Brave/Edge)"
             )
 
         mic = self._mic_in_use()
